@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Line Game</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-image: url('https://www.meptik.com/media/z1jnn3h4/sci-fi-landscape.png?quality=85&format=webp&width=1600&height=900&rmode=crop&rxy=');
+            background-size: cover;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        .info-block {
+            background-color: rgba(0, 0, 0, 0.85);
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            position: fixed;
+            top: 15px;
+            left: 10px;
+            width: 200px;
+        }
+
+        .inventory-box {
+            background-color: rgba(0, 0, 0, 0.85);
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            position: fixed;
+            top: 220px; /* Adjusted top position */
+            left: 10px;
+            width: 200px;
+        }
+
+        .material-input,
+        .intermediatePiece-input,
+        .finalProduct-input{
+            background-color: rgba(50, 50, 50, 0.85); /* Material input background */
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: inline-block; /* Use inline-block for smaller, centered boxes */
+        }
+            
+            .material-input label,
+            .intermediatePiece-input label,
+            .finalProduct-input label,
+            .material-input input,
+            .intermediatePiece-input input,
+            .finalProduct-input input,
+            .purchase-button,
+            .construct-button,
+            .constructAndSell-button{
+                display: block;
+                text-align: center;
+                color: #00ff00;
+                margin-bottom: 5px;
+            }
+
+                .material-input input[type="number"],
+                .intermediatePiece-input input[type="number"],
+                .finalProduct-input input[type="number"]{
+                    width: 80px;
+                    padding: 5px;
+                    background-color: rgba(255, 255, 255, 0.5);
+                    color: #000;
+                    border: 1px solid #00ff00;
+                    margin: auto; /* Center the input */
+                    text-align: center; /* Center the text inside the input */
+                }
+
+                    .material-input input[type="number"]:focus,
+                    .intermediatePiece-input input[type="number"]:focus,
+                    .finalProduct-input input[type="number"]:focus{
+                        outline: none;
+                        background-color: rgba(255, 255, 255, 0.75);
+                    }
+
+        .purchase-button,
+        .construct-button,
+        .constructAndSell-button{
+            padding: 5px 10px;
+            background-color: #00ff00;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            display: block; /* This makes the margin auto centering work */
+            margin: 10px auto; /* Adds 10px margin to the top and bottom, and auto to left and right */
+        }
+
+
+        .game-container {
+            position: fixed;
+            top: 100px; /* Adjust this as needed */
+            left: 50px;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Add styles for section titles */
+        .section-title {
+            color: #00ff00;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        /* Adjust the position of Raw Materials section */
+        .raw-materials-section {
+            margin-top: 20px; /* Adjust the top margin as needed */
+        }
+
+        /* Adjust the position of Intermediate Pieces section */
+        .intermediate-pieces-section {
+            margin-top: 20px; /* Adjust the top margin as needed */
+        }
+
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0, 0, 0, 0.4); /* Black with opacity */
+        }
+
+        .modal-content {
+            background-color: rgba(0, 0, 0, 0.85); /* Dark background similar to the game's style */
+            color: #00ff00; /* Green text */
+            margin: 10% auto; /* Margin from top and centered */
+            padding: 20px;
+            border: 1px solid #00ff00; /* Green border */
+            width: 50%; /* Adjust as needed for your design */
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+        }
+
+        .close {
+            color: #00ff00; /* Green close button */
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+            .close:hover,
+            .close:focus {
+                color: white;
+                text-decoration: none;
+                cursor: pointer;
+            }
+    </style>
+</head>
+<body>
+    <div class="info-block">
+        <h2>Game Info</h2>
+        <p>Current Profit: <span id="currentProfit">$0</span></p>
+        <p>Budget: <span id="budget">$5000</span></p>
+        <p>Timer: <span id="timer">100</span> turns left</p>
+    </div>
+
+    <div class="inventory-box">
+        <h3>Materials</h3>
+        <h4>Raw Materials</h4>
+        <div id="rawMaterialList">No raw materials purchased.</div>
+        <h4>Intermediate Pieces</h4>
+        <div id="intermediatePieceList">No intermediate material constructed.</div>
+    </div>
+
+    <div class="game-container">
+        <!-- Raw Materials Inputs -->
+        <h3 class="section-title">Raw Materials</h3>
+        <div class="raw-materials-section">
+            <div class="material-input">
+                <label for="plasticGranules">Plastic Granules</label>
+                <label for="plasticGranules" style="font-size: 12px;">Purchase Price: $5/Unit</label>
+                <input type="number" id="plasticGranules" name="plasticGranules" value="0" min="0">
+                <button class="purchase-button" onclick="purchaseMaterial('plasticGranules', 5)">Purchase</button>
+            </div>
+            <div class="material-input">
+                <label for="metalSheets">Metal Sheets</label>
+                <label for="metalSheets" style="font-size: 12px;">Purchase Price: $10/Unit</label>
+                <input type="number" id="metalSheets" name="metalSheets" value="0" min="0">
+                <button class="purchase-button" onclick="purchaseMaterial('metalSheets', 10)">Purchase</button>
+            </div>
+            <div class="material-input">
+                <label for="electronicChips">Electronic Chips</label>
+                <label for="electronicChips" style="font-size: 12px;">Purchase Price: $20/Unit</label>
+                <input type="number" id="electronicChips" name="electronicChips" value="0" min="0">
+                <button class="purchase-button" onclick="purchaseMaterial('electronicChips', 20)">Purchase</button>
+            </div>
+            <div class="material-input">
+                <label for="fabricRolls">Fabric Rolls</label>
+                <label for="fabricRolls" style="font-size: 12px;">Purchase Price: $7/Unit</label>
+                <input type="number" id="fabricRolls" name="fabricRolls" value="0" min="0">
+                <button class="purchase-button" onclick="purchaseMaterial('fabricRolls', 7)">Purchase</button>
+            </div>
+            <div class="material-input">
+                <label for="woodPlanks">Wood Planks</label>
+                <label for="woodPlanks" style="font-size: 12px;">Purchase Price: $12/Unit</label>
+                <input type="number" id="woodPlanks" name="woodPlanks" value="0" min="0">
+                <button class="purchase-button" onclick="purchaseMaterial('woodPlanks', 12)">Purchase</button>
+            </div>
+        </div>
+
+        <!-- Intermediate Materials Section Title -->
+        <h3 class="section-title">Intermediate Pieces</h3>
+        <div class="intermediate-pieces-section">
+            <!-- Intermediate Materials Inputs -->
+            <div class="intermediatePiece-input">
+                <label for="plasticCasing">Plastic Casing</label>
+                <label for="plasticCasing" style="font-size: 12px;">Material Needed: 2 Plastic Granules</label>
+                <label for="plasticCasing" style="font-size: 12px;">Construction Price: $10/Unit</label>
+                <label for="plasticCasing" style="font-size: 12px;">Time Needed: 1 Turn</label>
+                <input type="number" id="plasticCasingAmount" name="plasticCasingAmount" value="0" min="0">
+                <button class="construct-button" onclick="constructIntermediatePiece('plasticCasing', 10)">Construct</button>
+            </div>
+            <div class="intermediatePiece-input">
+                <label for="metalFrame">Metal Frame</label>
+                <label for="metalFrame" style="font-size: 12px;">Material Needed: 3 Metal Sheets</label>
+                <label for="metalFrame" style="font-size: 12px;">Construction Price: $15/Unit</label>
+                <label for="metalFrame" style="font-size: 12px;">Time Needed: 2 Turns</label>
+                <input type="number" id="metalFrameAmount" name="metalFrameAmount" value="0" min="0">
+                <button class="construct-button" onclick="constructIntermediatePiece('metalFrame', 15)">Construct</button>
+            </div>
+            <div class="intermediatePiece-input">
+                <label for="electronicBoard">Electronic Board</label>
+                <label for="electronicBoard" style="font-size: 12px;">Material Needed: 2 Electronic Chips</label>
+                <label for="electronicBoard" style="font-size: 12px;">Construction Price: $25/Unit</label>
+                <label for="electronicBoard" style="font-size: 12px;">Time Needed: 2 Turns</label>
+                <input type="number" id="electronicBoardAmount" name="electronicBoardAmount" value="0" min="0">
+                <button class="construct-button" onclick="constructIntermediatePiece('electronicBoard', 25)">Construct</button>
+            </div>
+            <div class="intermediatePiece-input">
+                <label for="textileCover">Textile Cover</label>
+                <label for="textileCover" style="font-size: 12px;">Material Needed: 1 Fabric Roll</label>
+                <label for="textileCover" style="font-size: 12px;">Construction Price: $5/Unit</label>
+                <label for="textileCover" style="font-size: 12px;">Time Needed: 1 Turn</label>
+                <input type="number" id="textileCoverAmount" name="textileCoverAmount" value="0" min="0">
+                <button class="construct-button" onclick="constructIntermediatePiece('textileCover', 5)">Construct</button>
+            </div>
+            <div class="intermediatePiece-input">
+                <label for="woodenBase">Wooden Base</label>
+                <label for="woodenBase" style="font-size: 12px;">Material Needed: 2 Wood Planks</label>
+                <label for="woodenBase" style="font-size: 12px;">Construction Price: $12/Unit</label>
+                <label for="woodenBase" style="font-size: 12px;">Time Needed: 1 Turn</label>
+                <input type="number" id="woodenBaseAmount" name="woodenBaseAmount" value="0" min="0">
+                <button class="construct-button" onclick="constructIntermediatePiece('woodenBase', 12)">Construct</button>
+            </div>
+            <div class="intermediatePiece-input">
+                <label for="woodenPictureFrame">Wooden Picture Frame</label>
+                <label for="woodenPictureFrame" style="font-size: 12px;">Material Needed: 1 Wood Plank</label>
+                <label for="woodenPictureFrame" style="font-size: 12px;">Construction Price: $8/Unit</label>
+                <label for="woodenPictureFrame" style="font-size: 12px;">Time Needed: 1 Turn</label>
+                <input type="number" id="woodenPictureFrameAmount" name="woodenPictureFrameAmount" value="0" min="0">
+                <button class="construct-button" onclick="constructIntermediatePiece('woodenPictureFrame', 8)">Construct</button>
+            </div>
+            <div class="intermediatePiece-input">
+                <label for="electronicConsole">Electronic Console</label>
+                <label for="electronicConsole" style="font-size: 12px;">Material Needed: 1 Electronic Board, 1 Plastic Casing</label>
+                <label for="electronicConsole" style="font-size: 12px;">Construction Price: $30/Unit</label>
+                <label for="electronicConsole" style="font-size: 12px;">Time Needed: 3 Turns</label>
+                <input type="number" id="electronicConsoleAmount" name="electronicConsoleAmount" value="0" min="0">
+                <button class="construct-button" onclick="constructIntermediatePiece('electronicConsole', 30)">Construct</button>
+            </div>
+        </div>
+        <!-- More materials inputs can be added in the same way -->
+        <!-- Final Product Section Title -->
+        <h3 class="section-title">Final Products</h3>
+        <div class="final-product-section">
+            <!-- Final Product Inputs -->
+            <div class="finalProduct-input">
+                <label for="smartphone">Smartphone</label>
+                <label for="smartphone" style="font-size: 12px;">Material Needed: 1 Electronic Console</label>
+                <label for="smartphone" style="font-size: 12px;">Construction Price: $50/Unit</label>
+                <label for="smartphone" style="font-size: 12px;">Sell Price: $300/Unit</label>
+                <input type="number" id="smartphoneAmount" name="smartphoneAmount" value="0" min="0">
+                <button class="constructAndSell-button" onclick="constructAndSellProduct('smartphone', 50, 300)">Construct And Sell</button>
+            </div>
+            <div class="finalProduct-input">
+                <label for="deskLamp">Desk Lamp</label>
+                <label for="deskLamp" style="font-size: 12px;">Material Needed: 1 Metal Frame, 1 Electronic Board</label>
+                <label for="deskLamp" style="font-size: 12px;">Construction Price: $35/Unit</label>
+                <label for="deskLamp" style="font-size: 12px;">Sell Price: $150/Unit</label>
+                <input type="number" id="deskLampAmount" name="deskLampAmount" value="0" min="0">
+                <button class="constructAndSell-button" onclick="constructAndSellProduct('deskLamp', 35, 150)">Construct And Sell</button>
+            </div>
+            <div class="finalProduct-input">
+                <label for="officeChair">Office Chair</label>
+                <label for="officeChair" style="font-size: 12px;">Material Needed: 1 Wooden Base, 1 Metal Frame, 1 Textile Coverd</label>
+                <label for="officeChair" style="font-size: 12px;">Construction Price: $40/Unit</label>
+                <label for="officeChair" style="font-size: 12px;">Sell Price: $180/Unit</label>
+                <input type="number" id="officeChairAmount" name="officeChairAmount" value="0" min="0">
+                <button class="constructAndSell-button" onclick="constructAndSellProduct('officeChair', 40, 180)">Construct And Sell</button>
+            </div>
+            <div class="finalProduct-input">
+                <label for="portableSpeaker">Portable Speaker</label>
+                <label for="portableSpeaker" style="font-size: 12px;">Material Needed: 1 Electronic Console, 1 Textile Cover</label>
+                <label for="portableSpeaker" style="font-size: 12px;">Construction Price: $25/Unit</label>
+                <label for="portableSpeaker" style="font-size: 12px;">Sell Price: $220/Unit</label>
+                <input type="number" id="portableSpeakerAmount" name="portableSpeakerAmount" value="0" min="0">
+                <button class="constructAndSell-button" onclick="constructAndSellProduct('portableSpeaker', 25, 220)">Construct And Sell</button>
+            </div>
+        </div>
+
+        <div id="introductionModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <p id="modalText"></p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        var remainingTurns = 100; // Or your preferred starting number of turns
+
+        // Placeholder data for raw material and intermediate piece inventories
+        var rawMaterialInventory = {
+            plasticGranules: 0,
+            metalSheets: 0,
+            electronicChips: 0,
+            fabricRolls: 0,
+            woodPlanks: 0
+        };
+
+        var intermediatePieceInventory = {
+            plasticCasing: 0,
+            metalFrame: 0,
+            electronicBoard: 0,
+            textileCover: 0,
+            woodenBase: 0,
+            woodenPictureFrame: 0,
+            electronicConsole: 0
+        };
+
+        // Construct Formula table
+        var constructFormula = {
+            plasticCasing: { plasticGranules: 2 },
+            metalFrame: { metalSheets: 3 },
+            electronicBoard: { electronicChips: 2 },
+            textileCover: { fabricRoll: 1 },
+            woodenBase: { woodPlanks: 2 },
+            woodenPictureFrame: { woodPlank: 1 },
+            electronicConsole: { electronicBoard: 1, plasticCasing: 1 },
+            smartphone: { electronicConsole: 1 },
+            deskLamp: { metalFrame: 1, electronicBoard: 1 },
+            officeChair: { woodenBase: 1, metalFrame: 1, textileCover: 1 },
+            portableSpeaker: { electronicConsole: 1, textileCover: 1 }
+        }
+
+        // Define time costs for each piece
+        var timeCosts = {
+            // Intermediate Pieces
+            plasticCasing: 1,
+            metalFrame: 2,
+            electronicBoard: 2,
+            textileCover: 1,
+            woodenBase: 1,
+            woodenPictureFrame: 1,
+            electronicConsole: 3,
+
+            // Final Products
+            smartphone: 4,
+            deskLamp: 3,
+            officeChair: 4,
+            portableSpeaker: 3
+        };
+
+        function updateTimerDisplay() {
+            document.getElementById('timer').textContent = remainingTurns;
+        }
+
+        function getTimeCost(piece) {
+            return timeCosts[piece] || 0;
+        }
+
+        function endGame() {
+            alert("Game over! Your final profit is: " + document.getElementById('currentProfit').textContent);
+        }
+
+        function customAlert(message) {
+            var modal = document.getElementById("introductionModal");
+            var span = document.getElementsByClassName("close")[0];
+
+            document.getElementById("modalText").innerText = message;
+
+            modal.style.display = "block";
+
+            span.onclick = function () {
+                modal.style.display = "none";
+            }
+
+            window.onclick = function (event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+        }
+
+        // Function to handle purchasing of a single raw material
+        function purchaseMaterial(material, costPerUnit) {
+            var amount = parseInt(document.getElementById(material).value, 10) || 0;
+            var budgetElement = document.getElementById('budget');
+            var currentProfitElement = document.getElementById('currentProfit');
+            var budget = parseFloat(budgetElement.textContent.replace('$', ''));
+            var currentProfit = parseFloat(currentProfitElement.textContent.replace('$', ''));
+
+            if (amount <= 0) {
+                customAlert('Please enter a valid amount to purchase!');
+                return;
+            }
+
+            var cost = amount * costPerUnit;
+
+            if (cost > budget) {
+                customAlert('Not enough budget to purchase materials!');
+                return;
+            }
+
+            rawMaterialInventory[material] += amount;
+            budget -= cost;
+            currentProfit -= cost;
+
+            budgetElement.textContent = '$' + budget.toFixed(2);
+            currentProfitElement.textContent = currentProfit >= 0 ? '$' + currentProfit.toFixed(2) : '-$' + Math.abs(currentProfit).toFixed(2);
+
+            document.getElementById(material).value = '0';
+            updateRawMaterialInventoryDisplay();
+        }
+
+        // Function to handle constructing of a single intermediate piece
+        function constructIntermediatePiece(piece, costToConstruct) {
+            var amountInput = document.getElementById(piece + "Amount").value;
+            var amount = parseInt(amountInput, 10) || 0;
+
+            var budgetElement = document.getElementById('budget');
+            var currentProfitElement = document.getElementById('currentProfit');
+            var budget = parseFloat(budgetElement.textContent.replace('$', ''));
+            var currentProfit = parseFloat(currentProfitElement.textContent.replace('$', ''));
+
+            if (amount <= 0) {
+                customAlert('Please enter a valid amount to construct!');
+                return;
+            }
+
+            // Calculate cost
+            var cost = amount * costToConstruct;
+
+            if (cost > budget) {
+                customAlert('Not enough budget to construct pieces!');
+                return;
+            }
+
+            // Check needed materials and other intermediate pieces
+            var formula = constructFormula[piece];
+            for (var requiredItem in formula) {
+                var requiredAmount = formula[requiredItem] * amount;
+                if (requiredItem in rawMaterialInventory) {
+                    if (rawMaterialInventory[requiredItem] < requiredAmount) {
+                        customAlert('Not enough ' + formatMaterialName(requiredItem) + ' to construct ' + formatMaterialName(piece) + '.');
+                        return;
+                    }
+                } else if (requiredItem in intermediatePieceInventory) {
+                    if (intermediatePieceInventory[requiredItem] < requiredAmount) {
+                        customAlert('Not enough ' + formatMaterialName(requiredItem) + ' to construct ' + formatMaterialName(piece) + '.');
+                        return;
+                    }
+                }
+            }
+
+            // Subtract the cost from the budget and current profit
+            budget -= cost;
+            currentProfit -= cost;
+
+            // Subtract materials and intermediate pieces used to create this piece
+            for (var requiredItem in formula) {
+                var requiredAmount = formula[requiredItem] * amount;
+                if (requiredItem in rawMaterialInventory) {
+                    rawMaterialInventory[requiredItem] -= requiredAmount;
+                } else if (requiredItem in intermediatePieceInventory) {
+                    intermediatePieceInventory[requiredItem] -= requiredAmount;
+                }
+            }
+
+            // Add the constructed pieces to the inventory
+            intermediatePieceInventory[piece] += amount;
+
+            // Update the display of budget and current profit
+            budgetElement.textContent = '$' + budget.toFixed(2);
+            currentProfitElement.textContent = currentProfit >= 0 ? '$' + currentProfit.toFixed(2) : '-$' + Math.abs(currentProfit).toFixed(2);
+
+            // Reset the input field to zero after construction
+            document.getElementById(piece + "Amount").value = '0';
+
+            // Update both inventories display
+            updateRawMaterialInventoryDisplay();
+            updateIntermediatePiecesInventoryDisplay();
+
+            // Example of decrementing the timer
+            var timeCost = getTimeCost(piece); // You need to define this function based on your time costs
+            remainingTurns -= timeCost;
+
+            updateTimerDisplay();
+
+            // Check if the game should end
+            if (remainingTurns <= 0) {
+                endGame(); // You need to define this function
+            }
+        }
+
+        // Function to handle constructing of a final product
+        function constructAndSellProduct(piece, costToConstruct, sellingPrice) {
+            var amountInput = document.getElementById(piece + "Amount").value;
+            var amount = parseInt(amountInput, 10) || 0;
+
+            var budgetElement = document.getElementById('budget');
+            var currentProfitElement = document.getElementById('currentProfit');
+            var budget = parseFloat(budgetElement.textContent.replace('$', ''));
+            var currentProfit = parseFloat(currentProfitElement.textContent.replace('$', ''));
+
+            if (amount <= 0) {
+                customAlert('Please enter a valid amount to construct!');
+                return;
+            }
+
+            // Calculate cost
+            var cost = amount * costToConstruct;
+
+            if (cost > budget) {
+                customAlert('Not enough budget to construct pieces!');
+                return;
+            }
+
+            // Check needed materials and other intermediate pieces
+            var formula = constructFormula[piece];
+            for (var requiredItem in formula) {
+                var requiredAmount = formula[requiredItem] * amount;
+                if (requiredItem in rawMaterialInventory) {
+                    if (rawMaterialInventory[requiredItem] < requiredAmount) {
+                        customAlert('Not enough ' + formatMaterialName(requiredItem) + ' to construct ' + formatMaterialName(piece) + '.');
+                        return;
+                    }
+                } else if (requiredItem in intermediatePieceInventory) {
+                    if (intermediatePieceInventory[requiredItem] < requiredAmount) {
+                        customAlert('Not enough ' + formatMaterialName(requiredItem) + ' to construct ' + formatMaterialName(piece) + '.');
+                        return;
+                    }
+                }
+            }
+
+            // Subtract the cost from the budget and current profit
+            budget -= cost;
+            currentProfit -= cost;
+
+            // Subtract materials and intermediate pieces used to create this piece
+            for (var requiredItem in formula) {
+                var requiredAmount = formula[requiredItem] * amount;
+                if (requiredItem in rawMaterialInventory) {
+                    rawMaterialInventory[requiredItem] -= requiredAmount;
+                } else if (requiredItem in intermediatePieceInventory) {
+                    intermediatePieceInventory[requiredItem] -= requiredAmount;
+                }
+            }
+
+            // Add the sold profut to the budget and profit
+            budget += sellingPrice;
+            currentProfit += sellingPrice;
+
+            // Update the display of budget and current profit
+            budgetElement.textContent = '$' + budget.toFixed(2);
+            currentProfitElement.textContent = currentProfit >= 0 ? '$' + currentProfit.toFixed(2) : '-$' + Math.abs(currentProfit).toFixed(2);
+
+            // Reset the input field to zero after construction
+            document.getElementById(piece + "Amount").value = '0';
+
+            // Update both inventories display
+            updateRawMaterialInventoryDisplay();
+            updateIntermediatePiecesInventoryDisplay();
+
+            // Example of decrementing the timer
+            var timeCost = getTimeCost(piece); // You need to define this function based on your time costs
+            remainingTurns -= timeCost;
+
+            updateTimerDisplay();
+
+            // Check if the game should end
+            if (remainingTurns <= 0) {
+                endGame(); // You need to define this function
+            }
+        }
+
+
+        // Function to update the raw materials in the inventory display
+        function updateRawMaterialInventoryDisplay() {
+            var rawMaterialListElement = document.getElementById('rawMaterialList');
+            rawMaterialListElement.innerHTML = '';
+            Object.keys(rawMaterialInventory).forEach(material => {
+                var quantity = rawMaterialInventory[material];
+                var materialNode = document.createElement('p');
+                materialNode.textContent = formatMaterialName(material) + ': ' + quantity;
+                rawMaterialListElement.appendChild(materialNode);
+            });
+        }
+
+        // Function to update the intermediate pieces in the inventory display
+        function updateIntermediatePiecesInventoryDisplay() {
+            var intermediatePieceListElement = document.getElementById('intermediatePieceList');
+            intermediatePieceListElement.innerHTML = '';
+            Object.keys(intermediatePieceInventory).forEach(piece => {
+                var quantity = intermediatePieceInventory[piece];
+                var pieceNode = document.createElement('p');
+                pieceNode.textContent = formatMaterialName(piece) + ': ' + quantity;
+                intermediatePieceListElement.appendChild(pieceNode);
+            });
+        }
+
+        // Helper function to format material and piece names for display
+        function formatMaterialName(name) {
+            return name.replace(/([A-Z])/g, ' $1')
+                .replace(/^./, function (str) { return str.toUpperCase(); })
+                .trim();
+        }
+
+        // Initialize the inventory display on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            updateRawMaterialInventoryDisplay();
+            updateIntermediatePiecesInventoryDisplay();
+            updateTimerDisplay();
+        });
+
+        showGameIntroduction();
+
+        function showGameIntroduction() {
+            setTimeout(function () {
+                var introductionMessage = "Welcome to the Production Line Game!\n\n" +
+                    "Goal: Your objective is to maximize profit by constructing and selling products within a set number of turns.\n\n" +
+                    "1. Game Info: Located at the top left of the screen, here you can track your current profit and budget.\n\n" +
+                    "2. Inventory: On the left side, this area displays your available raw materials and intermediate pieces.\n\n" +
+                    "3. Production Process: You start by purchasing raw materials. These are used to construct intermediate pieces, which are then assembled into final products to sell.\n\n" +
+                    "4. Purchasing and Construction: Each raw material and intermediate piece has a purchase or construction cost. To construct items, you need specific materials and enough budget. Each construction action consumes time.\n\n" +
+                    "5. Timing: The game operates on a turn-based system. Each construction action consumes a certain number of turns. Manage your actions wisely to maximize profit before you run out of turns.\n\n" +
+                    "Note: This game is best played on a desktop or laptop. If the content appears too small or overlaps, adjust the screen size by zooming in or out. You can do this by pressing 'Ctrl' and '+' to zoom in, or 'Ctrl' and '-' to zoom out.\n\n" +
+                    "Ready to start your production line? Good luck!";
+                customAlert(introductionMessage);
+            }, 500); // Delay the alert by 500 milliseconds (0.5 seconds)
+        }
+
+
+
+    </script>
+
+</body>
+</html>
